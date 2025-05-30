@@ -33,7 +33,7 @@ public:
     }
 
     COLOR getColor(FACE face, uint8_t row, uint8_t col) const override {
-        switch (cube[int(face)][row][col]) {
+        switch (cube[static_cast<int>(face)][row][col]) {
             case 'B':
                 return COLOR::BLUE;
             case 'R':

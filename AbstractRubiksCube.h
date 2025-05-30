@@ -15,7 +15,7 @@ class AbstractRubiksCube {
     public:
     //Listing all the faces
     enum class FACE {
-        UP, DOWN, LEFT, RIGHT, FRONT, BACK
+        UP, LEFT, FRONT, RIGHT, BACK, DOWN
     };
 
     // Listing all the possible moves
@@ -30,7 +30,7 @@ class AbstractRubiksCube {
 
     // Listing all the possible colors
     enum class COLOR {
-        WHITE, YELLOW, BLUE, GREEN, RED, ORANGE
+        WHITE, GREEN, RED, BLUE, ORANGE, YELLOW
     };
 
     // Boolean function to check if the cube is solved or not
