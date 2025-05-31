@@ -8,4 +8,5 @@ add_executable(rubiks_cube_sover main.cpp
         AbstractRubiksCube.h
         RubiksCube3DArrayModel.cpp
         RubiksCube1DArrayModel.cpp
+        RubiksCubeBitboardModel.cpp
 )

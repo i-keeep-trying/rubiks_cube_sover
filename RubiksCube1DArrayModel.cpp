@@ -5,50 +5,31 @@
 #include "AbstractRubiksCube.h"
 
 class RubiksCube1DArrayModel : public AbstractRubiksCube {
-private:
-
-    /*
-     * Given a face index, row and col, return it's flattened index
-     */
-    static int getIndex(int ind, int row, int col) {
-        return (ind * 9) + (row * 3) + col;
-    }
-
-    void rotateFace(int ind) {
-        char temp_arr[9] = {};
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                temp_arr[i * 3 + j] = cube[getIndex(ind, i, j)];
-            }
-        }
-        for (int i = 0; i < 3; i++) cube[getIndex(ind, 0, i)] = temp_arr[getIndex(0, 2 - i, 0)];
-        for (int i = 0; i < 3; i++) cube[getIndex(ind, i, 2)] = temp_arr[getIndex(0, 0, i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(ind, 2, 2 - i)] = temp_arr[getIndex(0, i, 2)];
-        for (int i = 0; i < 3; i++) cube[getIndex(ind, 2 - i, 0)] = temp_arr[getIndex(0, 2, 2 - i)];
-    }
-
-public:
+    public:
     char cube[54]{};
-
+    //initialises cube
     RubiksCube1DArrayModel() {
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 3; j++) {
-                for (int k = 0; k < 3; k++) {
-                    cube[i * 9 + j * 3 + k] = getColorLetter(COLOR(i));
-                }
+        for (int i = 0; i < 54; i+=9) {
+            for (int j = 0; j < 9; j++) {
+                cube[i + j] = getColorLetter(static_cast<COLOR>(i/9));
             }
         }
+    };
+
+    //returns the index in the 1D array given the row and index
+    static int getIdx(FACE face, uint8_t row, uint8_t col) {
+        return ((static_cast<int>(face))*9 + row*3 + col);
     }
 
-    COLOR getColor(FACE face, uint8_t row, uint8_t col) const override {
-        char color = cube[getIndex((int)face, (int)row, (int)col)];
-        switch (color) {
-            case 'B':
-                return COLOR::BLUE;
-            case 'R':
-                return COLOR::RED;
+    //returns the color given the letter
+    static COLOR getLetterColor(char letter) {
+        switch (letter) {
             case 'G':
                 return COLOR::GREEN;
+            case 'R':
+                return COLOR::RED;
+            case 'B':
+                return COLOR::BLUE;
             case 'O':
                 return COLOR::ORANGE;
             case 'Y':
@@ -58,147 +39,234 @@ public:
         }
     }
 
-    bool isSolved() const override {
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 3; j++) {
-                for (int k = 0; k < 3; k++) {
-                    if (this->cube[getIndex(i, j, k)] == getColorLetter(COLOR(i))) continue;
-                    return false;
+    //returns the color given the face, row and column
+    [[nodiscard]] COLOR getColor(const FACE face, const uint8_t row, const uint8_t col) const override {
+        return (getLetterColor(cube[getIdx(face, row, col)]));
+    }
+
+    //checks if it is solved
+    [[nodiscard]] bool isSolved() const override {
+        bool solved = true;
+        for (int i = 0; i < 54; i+=9) {
+            for (int j = 0; j < 9; j++) {
+                if (static_cast<COLOR>(i/9) != getLetterColor(cube[i+j])) {
+                    solved = false;
+                    break;
                 }
             }
         }
-        return true;
+        return solved;
+    };
+
+    //rotates the face clockwise
+    void rotateFaceClockwise(FACE face) {
+        int st = static_cast<int>(face)*9;
+        char temp[9]{};
+        for (int i=st; i<st+9; i++) {
+            temp[i-st] = cube[i];
+        }
+        for (int i=0; i<3; i++) {
+            cube[st+(i+1)*3-1] = temp[i];
+            cube[st+(i+1)*3-2] = temp[i+3];
+            cube[st+(i+1)*3-3] = temp[i+6];
+        }
     }
 
+    //rotates the face counter-clockwise
+    void rotateFaceCounterClockwise(FACE face) {
+        const int st = static_cast<int>(face)*9;
+        char temp[9]{};
+        for (int i=st; i<st+9; i++) {
+            temp[i-st] = cube[i];
+        }
+        for (int i=0; i<3; i++) {
+            cube[st+i] = temp[(i+1)*3-1];
+            cube[st+i+3] = temp[(i+1)*3-2];
+            cube[st+i+6] = temp[(i+1)*3-3];
+        }
+    }
+
+    //implementing all possible 18 moves
     AbstractRubiksCube &u() override {
-        this->rotateFace(0);
-
-        char temp_arr[3] = {};
-        for (int i = 0; i < 3; i++) temp_arr[i] = cube[getIndex(4, 0, 2 - i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(4, 0, 2 - i)] = cube[getIndex(1, 0, 2 - i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(1, 0, 2 - i)] = cube[getIndex(2, 0, 2 - i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(2, 0, 2 - i)] = cube[getIndex(3, 0, 2 - i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(3, 0, 2 - i)] = temp_arr[i];
-
-        return *this;
-    }
-
-    AbstractRubiksCube &uPrime() override {
-        this->u();
-        this->u();
-        this->u();
+        rotateFaceClockwise(FACE::UP);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, 0, i)];
+            cube[getIdx(FACE::FRONT, 0, i)] = cube[getIdx(FACE::RIGHT, 0, i)];
+            cube[getIdx(FACE::RIGHT, 0, i)] = cube[getIdx(FACE::BACK, 0, i)];
+            cube[getIdx(FACE::BACK, 0, i)] = cube[getIdx(FACE::LEFT, 0, i)];
+            cube[getIdx(FACE::LEFT, 0, i)] = temp;
+        }
 
         return *this;
-    }
+    };
 
     AbstractRubiksCube &u2() override {
         this->u();
         this->u();
-
         return *this;
-    }
+    };
+
+    AbstractRubiksCube &uPrime() override {
+        rotateFaceCounterClockwise(FACE::UP);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, 0, i)];
+            cube[getIdx(FACE::FRONT, 0, i)] = cube[getIdx(FACE::LEFT, 0, i)];
+            cube[getIdx(FACE::LEFT, 0, i)] = cube[getIdx(FACE::BACK, 0, i)];
+            cube[getIdx(FACE::BACK, 0, i)] = cube[getIdx(FACE::RIGHT, 0, i)];
+            cube[getIdx(FACE::RIGHT, 0, i)] = temp;
+        }
+        return *this;
+    };
 
     AbstractRubiksCube &l() override {
-        this->rotateFace(1);
-
-        char temp_arr[3] = {};
-        for (int i = 0; i < 3; i++) temp_arr[i] = cube[getIndex(0, i, 0)];
-        for (int i = 0; i < 3; i++) cube[getIndex(0, i, 0)] = cube[getIndex(4, 2 - i, 2)];
-        for (int i = 0; i < 3; i++) cube[getIndex(4, 2 - i, 2)] = cube[getIndex(5, i, 0)];
-        for (int i = 0; i < 3; i++) cube[getIndex(5, i, 0)] = cube[getIndex(2, i, 0)];
-        for (int i = 0; i < 3; i++) cube[getIndex(2, i, 0)] = temp_arr[i];
-
+        rotateFaceClockwise(FACE::LEFT);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, i, 0)];
+            cube[getIdx(FACE::FRONT, i, 0)] = cube[getIdx(FACE::UP, i, 0)];
+            cube[getIdx(FACE::UP, i, 0)] = cube[getIdx(FACE::BACK, 2-i, 2)];
+            cube[getIdx(FACE::BACK, 2-i, 2)] = cube[getIdx(FACE::DOWN, i, 0)];
+            cube[getIdx(FACE::DOWN, i, 0)] = temp;
+        }
         return *this;
-    }
+    };
 
     AbstractRubiksCube &lPrime() override {
-        this->l();
-        this->l();
-        this->l();
+        rotateFaceCounterClockwise(FACE::LEFT);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, i, 0)];
+            cube[getIdx(FACE::FRONT, i, 0)] = cube[getIdx(FACE::DOWN, i, 0)];
+            cube[getIdx(FACE::DOWN, i, 0)] = cube[getIdx(FACE::BACK, 2-i, 2)];
+            cube[getIdx(FACE::BACK, 2-i, 2)] = cube[getIdx(FACE::UP, i, 0)];
+            cube[getIdx(FACE::UP, i, 0)] = temp;
+        }
+        return *this;
+    };
+
+    AbstractRubiksCube &r() override {
+        rotateFaceClockwise(FACE::RIGHT);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, i, 2)];
+            cube[getIdx(FACE::FRONT, i, 2)] = cube[getIdx(FACE::UP, i, 2)];
+            cube[getIdx(FACE::UP, i, 2)] = cube[getIdx(FACE::BACK, 2-i, 0)];
+            cube[getIdx(FACE::BACK, 2-i, 0)] = cube[getIdx(FACE::DOWN, i, 2)];
+            cube[getIdx(FACE::DOWN, i, 2)] = temp;
+        }
+        return *this;
+    };
+
+    AbstractRubiksCube &rPrime() override {
+        rotateFaceCounterClockwise(FACE::RIGHT);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, i, 2)];
+            cube[getIdx(FACE::FRONT, i, 2)] = cube[getIdx(FACE::DOWN, i, 2)];
+            cube[getIdx(FACE::DOWN, i, 2)] = cube[getIdx(FACE::BACK, 2-i, 0)];
+            cube[getIdx(FACE::BACK, 2-i, 0)] = cube[getIdx(FACE::UP, i, 2)];
+            cube[getIdx(FACE::UP, i, 2)] = temp;
+
+        }
+        return *this;
+    };
+
+    AbstractRubiksCube &d() override {
+        rotateFaceClockwise(FACE::DOWN);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, 2, i)];
+            cube[getIdx(FACE::FRONT, 2, i)] = cube[getIdx(FACE::LEFT, 2, i)];
+            cube[getIdx(FACE::LEFT, 2, i)] = cube[getIdx(FACE::BACK, 2, i)];
+            cube[getIdx(FACE::BACK, 2, i)] = cube[getIdx(FACE::RIGHT, 2, i)];
+            cube[getIdx(FACE::RIGHT, 2, i)] = temp;
+        }
+        return *this;
+    };
+
+    AbstractRubiksCube &d2() override {
+        this->d();
+        this->d();
 
         return *this;
-    }
+    };
+
+    AbstractRubiksCube &dPrime() override {
+        rotateFaceCounterClockwise(FACE::DOWN);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::FRONT, 2, i)];
+            cube[getIdx(FACE::FRONT, 2, i)] = cube[getIdx(FACE::RIGHT, 2, i)];
+            cube[getIdx(FACE::RIGHT, 2, i)] = cube[getIdx(FACE::BACK, 2, i)];
+            cube[getIdx(FACE::BACK, 2, i)] = cube[getIdx(FACE::LEFT, 2, i)];
+            cube[getIdx(FACE::LEFT, 2, i)] = temp;
+        }
+        return *this;
+    };
 
     AbstractRubiksCube &l2() override {
         this->l();
         this->l();
 
         return *this;
-    }
-
-    AbstractRubiksCube &f() override {
-        this->rotateFace(2);
-
-        char temp_arr[3] = {};
-        for (int i = 0; i < 3; i++) temp_arr[i] = cube[getIndex(0, 2, i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(0, 2, i)] = cube[getIndex(1, 2 - i, 2)];
-        for (int i = 0; i < 3; i++) cube[getIndex(1, 2 - i, 2)] = cube[getIndex(5, 0, 2 - i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(5, 0, 2 - i)] = cube[getIndex(3, i, 0)];
-        for (int i = 0; i < 3; i++) cube[getIndex(3, i, 0)] = temp_arr[i];
-
-        return *this;
-    }
-
-    AbstractRubiksCube &fPrime() override {
-        this->f();
-        this->f();
-        this->f();
-
-        return *this;
-    }
-
-    AbstractRubiksCube &f2() override {
-        this->f();
-        this->f();
-
-        return *this;
-    }
-
-    AbstractRubiksCube &r() override {
-        this->rotateFace(3);
-
-        char temp_arr[3] = {};
-        for (int i = 0; i < 3; i++) temp_arr[i] = cube[getIndex(0, 2 - i, 2)];
-        for (int i = 0; i < 3; i++) cube[getIndex(0, 2 - i, 2)] = cube[getIndex(2, 2 - i, 2)];
-        for (int i = 0; i < 3; i++) cube[getIndex(2, 2 - i, 2)] = cube[getIndex(5, 2 - i, 2)];
-        for (int i = 0; i < 3; i++) cube[getIndex(5, 2 - i, 2)] = cube[getIndex(4, i, 0)];
-        for (int i = 0; i < 3; i++) cube[getIndex(4, i, 0)] = temp_arr[i];
-
-        return *this;
-    }
-
-    AbstractRubiksCube &rPrime() override {
-        this->r();
-        this->r();
-        this->r();
-
-        return *this;
-    }
+    };
 
     AbstractRubiksCube &r2() override {
         this->r();
         this->r();
 
         return *this;
-    }
+    };
 
-    AbstractRubiksCube &b() override {
-        this->rotateFace(4);
-
-        char temp_arr[3] = {};
-        for (int i = 0; i < 3; i++) temp_arr[i] = cube[getIndex(0, 0, 2 - i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(0, 0, 2 - i)] = cube[getIndex(3, 2 - i, 2)];
-        for (int i = 0; i < 3; i++) cube[getIndex(3, 2 - i, 2)] = cube[getIndex(5, 2, i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(5, 2, i)] = cube[getIndex(1, i, 0)];
-        for (int i = 0; i < 3; i++) cube[getIndex(1, i, 0)] = temp_arr[i];
+    AbstractRubiksCube &f() override {
+        rotateFaceClockwise(FACE::FRONT);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::UP, 2, i)];
+            cube[getIdx(FACE::UP, 2, i)] = cube[getIdx(FACE::LEFT, 2-i, 2)];
+            cube[getIdx(FACE::LEFT, 2-i, 2)] = cube[getIdx(FACE::DOWN, 0, 2-i)];
+            cube[getIdx(FACE::DOWN, 0, 2-i)] = cube[getIdx(FACE::RIGHT, i, 0)];
+            cube[getIdx(FACE::RIGHT, i, 0)] = temp;
+        }
 
         return *this;
-    }
+    };
+
+    AbstractRubiksCube &fPrime() override {
+        rotateFaceCounterClockwise(FACE::FRONT);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::UP, 2, i)];
+            cube[getIdx(FACE::UP, 2, i)] = cube[getIdx(FACE::RIGHT, i, 0)];
+            cube[getIdx(FACE::RIGHT, i, 0)] = cube[getIdx(FACE::DOWN, 0, 2-i)];
+            cube[getIdx(FACE::DOWN, 0, 2-i)] = cube[getIdx(FACE::LEFT, 2-i, 2)];
+            cube[getIdx(FACE::LEFT, 2-i, 2)] = temp;
+        }
+
+        return *this;
+    };
+
+    AbstractRubiksCube &f2() override {
+        this->f();
+        this->f();
+
+        return *this;
+    };
+
+    AbstractRubiksCube &b() override {
+        rotateFaceClockwise(FACE::BACK);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::UP, 0, i)];
+            cube[getIdx(FACE::UP, 0, i)] = cube[getIdx(FACE::RIGHT, i, 2)];
+            cube[getIdx(FACE::RIGHT, i, 2)] = cube[getIdx(FACE::DOWN, 2, 2-i)];
+            cube[getIdx(FACE::DOWN, 2, 2-i)] = cube[getIdx(FACE::LEFT, 2-i, 0)];
+            cube[getIdx(FACE::LEFT, 2-i, 0)] = temp;
+        }
+
+        return *this;
+    };
 
     AbstractRubiksCube &bPrime() override {
-        this->b();
-        this->b();
-        this->b();
+        rotateFaceCounterClockwise(FACE::BACK);
+        for (int i=0; i<3; i++) {
+            const char temp = cube[getIdx(FACE::UP, 0, i)];
+            cube[getIdx(FACE::UP, 0, i)] = cube[getIdx(FACE::LEFT, 2-i, 0)];
+            cube[getIdx(FACE::LEFT, 2-i, 0)] = cube[getIdx(FACE::DOWN, 2, 2-i)];
+            cube[getIdx(FACE::DOWN, 2, 2-i)] = cube[getIdx(FACE::RIGHT, i, 2)];
+            cube[getIdx(FACE::RIGHT, i, 2)] = temp;
+        }
 
         return *this;
     }
@@ -208,35 +276,7 @@ public:
         this->b();
 
         return *this;
-    }
-
-    AbstractRubiksCube &d() override {
-        this->rotateFace(5);
-
-        char temp_arr[3] = {};
-        for (int i = 0; i < 3; i++) temp_arr[i] = cube[getIndex(2, 2, i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(2, 2, i)] = cube[getIndex(1, 2, i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(1, 2, i)] = cube[getIndex(4, 2, i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(4, 2, i)] = cube[getIndex(3, 2, i)];
-        for (int i = 0; i < 3; i++) cube[getIndex(3, 2, i)] = temp_arr[i];
-
-        return *this;
-    }
-
-    AbstractRubiksCube &dPrime() override {
-        this->d();
-        this->d();
-        this->d();
-
-        return *this;
-    }
-
-    AbstractRubiksCube &d2() override {
-        this->d();
-        this->d();
-
-        return *this;
-    }
+    };
 
     bool operator==(const RubiksCube1DArrayModel &r1) const {
         for (int i = 0; i < 54; i++) {
@@ -251,7 +291,6 @@ public:
         }
         return *this;
     }
-
 };
 
 struct Hash1d {

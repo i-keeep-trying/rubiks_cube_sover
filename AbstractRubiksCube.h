@@ -13,6 +13,8 @@ using namespace std;
 
 class AbstractRubiksCube {
     public:
+    virtual ~AbstractRubiksCube() = default;
+
     //Listing all the faces
     enum class FACE {
         UP, LEFT, FRONT, RIGHT, BACK, DOWN
