@@ -4,7 +4,7 @@
 
 #include "AbstractRubiksCube.h"
 
-class RubiksCubeBitboard : public AbstractRubiksCube {
+class RubiksCubeBitboardModel : public AbstractRubiksCube {
 
 private:
     uint64_t solved_side_config[6]{};   //this will store the initial solved state of the cube
@@ -73,7 +73,7 @@ public:
     uint64_t bitboard[6]{};     //bitboard is an array of size 6 with integers of 64 bits
 
     //constructor to initialize the bitboard and the solved_side_config
-    RubiksCubeBitboard() {
+    RubiksCubeBitboardModel() {
         for (int side = 0; side < 6; side++) {
             uint64_t clr = 1 << side;
             bitboard[side] = 0;
@@ -208,10 +208,10 @@ public:
 
         this->rotateSide(0, 2, 3, 4, 2, 2, 3, 4);
         this->rotateSide(2, 2, 3, 4, 5, 2, 3, 4);
-        this->rotateSide(5, 2, 3, 4, 4, 7, 6, 0);
+        this->rotateSide(5, 2, 3, 4, 4, 6, 7, 0);
 
-        bitboard[4] = (bitboard[4] & ~(one_8 << (8 * 7))) | (clr1 << (8 * 7));
-        bitboard[4] = (bitboard[4] & ~(one_8 << (8 * 6))) | (clr2 << (8 * 6));
+        bitboard[4] = (bitboard[4] & ~(one_8 << (8 * 7))) | (clr2 << (8 * 7));
+        bitboard[4] = (bitboard[4] & ~(one_8 << (8 * 6))) | (clr1 << (8 * 6));
         bitboard[4] = (bitboard[4] & ~(one_8 << (8 * 0))) | (clr3 << (8 * 0));
 
         return *this;
@@ -299,7 +299,7 @@ public:
     }
 
     //specifying how the "==" operator should work
-    bool operator==(const RubiksCubeBitboard &r1) const {
+    bool operator==(const RubiksCubeBitboardModel &r1) const {
         for (int i = 0; i < 6; i++) {
             if (bitboard[i] != r1.bitboard[i]) return false;
         }
@@ -307,7 +307,7 @@ public:
     }
 
     //specifying how the "=" operator should work
-    RubiksCubeBitboard &operator=(const RubiksCubeBitboard &r1) {
+    RubiksCubeBitboardModel &operator=(const RubiksCubeBitboardModel &r1) {
         for (int i = 0; i < 6; i++) {
             bitboard[i] = r1.bitboard[i];
         }
@@ -388,7 +388,7 @@ public:
 
 //struct to hash the bitboard states
 struct HashBitboard {
-    size_t operator()(const RubiksCubeBitboard &r1) const {
+    size_t operator()(const RubiksCubeBitboardModel &r1) const {
         uint64_t final_hash = r1.bitboard[0];
         for (int i = 1; i < 6; i++) final_hash ^= r1.bitboard[i];
         return (size_t) final_hash;
