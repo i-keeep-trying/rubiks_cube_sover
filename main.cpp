@@ -25,7 +25,6 @@ int main() {
         idaStarSolver.rubiksCube.print();
         for (auto move: moves) cout << cube.getMove(move) << " ";
         cout << "\n";
-
         return 0;
     } catch (const char* errMsg) {
         std::cerr << "Error: " << errMsg << std::endl;
